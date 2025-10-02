@@ -6,7 +6,8 @@ const colors = [
   '#F9F871', '#A66DD4', '#FF9F1C', '#2EC4B6',
 ];
 
-export function generateWheelSegments(personas: any[], radius = 180) {
+type Segment = { label: string; value: number }; 
+export function generateWheelSegments(personas: Segment[], radius = 180) {
   const angleStep = (2 * Math.PI) / personas.length;
 
   return personas.map((persona, i) => {

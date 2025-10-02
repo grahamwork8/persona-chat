@@ -8,10 +8,17 @@ export default function ChatInput({
   personaId: string;
   sessionId: string;
 }) {
-  const [message, setMessage] = useState("");
+const [message, setMessage] = useState("");
   const [reply, setReply] = useState("");
   const [persona, setPersona] = useState<{ name: string; description: string } | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  type Message = {
+  role: 'user' | 'assistant';
+  content: string;
+  created_at?: string;
+};
+
+const [messages, setMessages] = useState<Message[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
