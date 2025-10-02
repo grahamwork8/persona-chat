@@ -2,16 +2,17 @@ import { getAuth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { NextRequest } from 'next/server';
+import { getAuth } from '@clerk/nextjs/server';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-export async function POST(req: Request) {
-  try {
-    console.log("🔧 Starting /api/chat");
+export async function POST(req: NextRequest) {
+  console.log("🔧 Starting /api/chat");
 
-    const auth = getAuth(req);
-    const userId = auth?.userId;
-    console.log("🔐 Authenticated user:", userId);
+  const auth = getAuth(req);
+  const userId = auth?.userId;
+  console.log("🔐 Authenticated user:", userId);
 
     if (!userId) {
       console.warn("⚠️ No userId found, redirecting to sign-in");
