@@ -1,25 +1,30 @@
-// app/api/messages/route.ts
-import { getAuth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const sessionId = searchParams.get("sessionId");
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const { userId } = getAuth(req);
-  if (!userId || !sessionId) {
+  if (!supabaseUrl || !supabaseKey) {
     return NextResponse.json({ messages: [] });
   }
 
-  const { data, error } = await supabaseServer
-    .from("messages")
-    .select("role, content")
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: true });
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const { searchParams } = new URL(req.url);
+  const sessionId = searchParams.get('sessionId');
 
-  if (error) {
-    console.error("❌ Message fetch error:", error);
+  if (!sessionId) {
+    return NextResponse.json({ messages: [] });
+  }
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('role, content, created_at')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true });
+
+  if (error || !data) {
+    console.error('Supabase error:', error);
     return NextResponse.json({ messages: [] });
   }
 

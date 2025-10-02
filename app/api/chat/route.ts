@@ -21,9 +21,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log("📦 Request body:", body);
 
-    const { message, personaId, chatSessionId } = body;
+    const { message, personaId, sessionId } = body;
 
-    if (!message || !personaId || !chatSessionId) {
+    if (!message || !personaId || !sessionId) {
       console.warn("⚠️ Missing required fields");
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const { data: messagesData, error: messagesError } = await supabaseServer
       .from("messages")
       .select("role, content")
-      .eq("session_id", chatSessionId)
+      .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
 
     if (messagesError) {
@@ -70,11 +70,16 @@ export async function POST(req: Request) {
 const reply = openaiResponse.choices[0]?.message?.content ?? "No response";
 
     console.log("🤖 OpenAI reply:", reply);
+console.log("Inserting messages:", [
+  { session_id: sessionId, role: "user", content: message },
+  { session_id: sessionId, role: "ai", content: aiReply },
+]);
+
 
     console.log("💾 Saving messages to Supabase...");
     await supabaseServer.from("messages").insert([
-      { session_id: chatSessionId, role: "user", content: message },
-      { session_id: chatSessionId, role: "assistant", content: reply }
+      { session_id: sessionId, role: "user", content: message },
+      { session_id: sessionId, role: "assistant", content: reply }
     ]);
 
     return NextResponse.json({ reply });

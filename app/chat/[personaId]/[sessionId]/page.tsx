@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import ChatInput from '@/components/ChatInput';
 import PersonaSelector from '@/components/PersonaSelector';
 import dayjs from 'dayjs';
+import MessageList from '@/components/MessageList';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,7 +50,7 @@ export default function ChatPage() {
       const { data: messageData } = await supabase
         .from('messages')
         .select('*')
-        .eq('chat_session_id', sessionId)
+        .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
 
       setPersona(personaData);
@@ -64,7 +65,7 @@ export default function ChatPage() {
             event: 'INSERT',
             schema: 'public',
             table: 'messages',
-            filter: `chat_session_id=eq.${sessionId}`,
+            filter: `session_id=eq.${sessionId}`,
           },
           (payload) => {
             setMessages((prev) => [...prev, payload.new]);
@@ -79,19 +80,19 @@ export default function ChatPage() {
 
     loadChat();
   }, [personaId, sessionId]);
-const startNewChat = async () => {
-  const res = await fetch(`/api/chat/new?personaId=${personaId}`, {
-    method: 'POST',
-  });
-  const { sessionId: newSessionId } = await res.json();
-  router.push(`/chat/${personaId}/${newSessionId}`);
-};
 
+  const startNewChat = async () => {
+    const res = await fetch(`/api/chat/new?personaId=${personaId}`, {
+      method: 'POST',
+    });
+    const { sessionId: newSessionId } = await res.json();
+    router.push(`/chat/${personaId}/${newSessionId}`);
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
         <span className="ml-3 text-gray-500">Loading your chat...</span>
       </div>
     );
@@ -106,41 +107,27 @@ const startNewChat = async () => {
   }
 
   return (
-    <main className="p-4 max-w-2xl mx-auto">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold">{persona.name}</h1>
-        <p className="text-sm text-gray-600">{persona.description}</p>
+    <main className="min-h-screen bg-gray-100 flex flex-col items-center px-4 py-6">
+      <div className="w-full max-w-2xl space-y-6">
+        {/* Header */}
+        <div className="bg-white border rounded p-4 shadow flex justify-between items-center">
+          <div>
+            <h1 className="text-lg font-semibold">{persona.name}</h1>
+            <p className="text-sm text-gray-500 italic">{persona.description}</p>
+          </div>
+          <button
+            onClick={startNewChat}
+            className="px-15 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-900"
+          >
+             New Chat
+          </button>
+        </div>
+
+        
+
+        {/* Chat Input */}
+        <ChatInput personaId={personaId as string} sessionId={sessionId as string} />
       </div>
-
-      <div className="space-y-4 mb-6">
-        {messages.map((msg) => {
-          const isUser = msg.sender === 'user';
-          return (
-            <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-xs px-4 py-2 rounded-lg ${
-                  isUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
-                }`}
-              >
-                <p className="text-sm">{msg.content}</p>
-                <p className="text-xs mt-1 text-right text-gray-500">
-                  {dayjs(msg.created_at).format('HH:mm')}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-
-<button
-  onClick={startNewChat}
-  className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
->
-  New Chat
-</button>
-      </div>
-
-      <ChatInput personaId={personaId as string} sessionId={sessionId as string} />
     </main>
   );
 }
-

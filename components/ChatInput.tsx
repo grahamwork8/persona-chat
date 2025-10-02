@@ -34,25 +34,51 @@ export default function ChatInput({
     const data = await res.json();
     setMessages(data.messages);
   };
+const sendMessage = async () => {
+  if (!message.trim()) return;
 
-  const sendMessage = async () => {
-    if (!message.trim()) return;
+  setIsLoading(true);
 
-    setIsLoading(true);
-
-    const res = await fetch("/api/chat", {
+  try {
+    const res = await fetch("/api/chat/respond", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ message, personaId, chatSessionId: sessionId }),
+      body: JSON.stringify({ message, personaId, sessionId }),
     });
 
-    const data = await res.json();
-    setReply(data.reply);
-    setMessage("");
-    fetchMessages();
+    if (!res.ok) {
+      console.error("Server error:", res.status);
+      setIsLoading(false);
+      return;
+    }
+
+    let data;
+    try {
+      data = await res.json();
+    } catch (err) {
+      console.error("Failed to parse JSON:", err);
+      setIsLoading(false);
+      return;
+    }
+
+console.log("Response from backend:", data);
+
+if (!data || typeof data.reply !== "string") {
+  console.error("Invalid response format:", data);
+  return;
+}
+
+setReply(data.reply);
+setMessage("");
+fetchMessages();
+  } catch (err) {
+    console.error("sendMessage error:", err);
+  } finally {
     setIsLoading(false);
-  };
+  }
+};
+
 
   return (
     <div className="space-y-4">

@@ -1,27 +1,25 @@
 // app/api/persona/route.ts
-import { getAuth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const personaId = searchParams.get("personaId");
+  const url = new URL(req.url);
+  const personaId = url.searchParams.get("personaId");
 
-  const { userId } = getAuth(req);
-  if (!userId || !personaId) {
-    return NextResponse.json({ persona: null });
-  }
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-  const { data, error } = await supabaseServer
+  const { data, error } = await supabase
     .from("personas")
-    .select("name, description")
+    .select("*")
     .eq("id", personaId)
     .single();
 
   if (error || !data) {
-    console.error("❌ Persona fetch error:", error);
-    return NextResponse.json({ persona: null });
+    return NextResponse.json({ error: "Persona not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ persona: data });
+  return NextResponse.json(data);
 }

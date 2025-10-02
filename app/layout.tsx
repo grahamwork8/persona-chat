@@ -1,28 +1,27 @@
-// app/layout.tsx
-import { ClerkProvider } from '@clerk/nextjs'
-import { Inter } from 'next/font/google'
-import { cookies } from 'next/headers'
-import './globals.css'
-import Header from '@/components/Header'
+// /app/layout.tsx
+import '../styles/globals.css';
+import { ClerkProvider } from '@clerk/nextjs';
+import { Inter } from 'next/font/google';
+import type { Metadata } from 'next';
+import Header from '../app/Header';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Persona Chat',
-  description: 'Chat with custom AI personalities',
-}
-
+  description: 'Chat with custom personas powered by AI',
+};
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies();
-
   return (
-    <ClerkProvider initialState={{ cookies: cookieStore }}>
+    <ClerkProvider>
       <html lang="en">
         <body className={inter.className}>
-          <Header />
-          <main className="p-4">{children}</main>
+          <main className="min-h-screen bg-gray-50 text-gray-900">
+            <Header />
+            {children}
+          </main>
         </body>
       </html>
     </ClerkProvider>
-  )
+  );
 }

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: Request) {
-  const { message, personaId, chatSessionId } = await req.json();
+  const { message, personaId, sessionId } = await req.json();
 
   // Fetch persona from Supabase
   const persona = await getPersonaById(personaId); // your Supabase query
@@ -22,8 +22,8 @@ export async function POST(req: Request) {
   const reply = response.choices[0].message.content;
 
   // Save message to Supabase
-  await saveMessage(chatSessionId, 'user', message);
-  await saveMessage(chatSessionId, 'persona', reply);
+  await saveMessage(sessionId, 'user', message);
+  await saveMessage(sessionId, 'persona', reply);
 
   return NextResponse.json({ reply });
 }
