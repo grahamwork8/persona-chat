@@ -8,6 +8,7 @@ import { getAuth } from '@clerk/nextjs/server';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 export async function POST(req: NextRequest) {
+	try {
   console.log("🔧 Starting /api/chat");
 
   const auth = getAuth(req);
