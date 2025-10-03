@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { NextRequest } from 'next/server';
-import { getAuth } from '@clerk/nextjs/server';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
