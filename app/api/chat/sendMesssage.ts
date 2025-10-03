@@ -1,6 +1,6 @@
 import { OpenAI } from "openai";
 import { NextRequest, NextResponse } from "next/server";
-import { getPersonaById } from "@/lib/persona";
+import { getPersonaById } from "@/app/api/persona/route.ts";
 import { createClient } from "@supabase/supabase-js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
