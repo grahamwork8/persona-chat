@@ -73,7 +73,7 @@ const reply = openaiResponse.choices[0]?.message?.content ?? "No response";
     console.log("🤖 OpenAI reply:", reply);
 console.log("Inserting messages:", [
   { session_id: sessionId, role: "user", content: message },
-  { session_id: sessionId, role: "ai", content: aiReply },
+  { session_id: sessionId, role: "ai", content: reply },
 ]);
 
 
