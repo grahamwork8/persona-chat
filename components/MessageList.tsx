@@ -1,7 +1,13 @@
 // components/MessageList.tsx
 import dayjs from 'dayjs';
 
-export default function MessageList({ messages }) {
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  created_at?: string;
+};
+
+export default function MessageList({ messages }: { messages: Message[] }) {
   if (!Array.isArray(messages)) return null;
 
   return (

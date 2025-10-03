@@ -6,7 +6,7 @@ export default function ChatInput({
   sessionId,
 }: {
   personaId: string;
-  sessionId: string;
+  sessionId?: string;
 }) {
 const [message, setMessage] = useState("");
   const [reply, setReply] = useState("");

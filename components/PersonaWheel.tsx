@@ -1,16 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { Persona } from "@/lib/types";
 import { useRouter } from 'next/navigation';
 import { generateWheelSegments } from '@/lib/generateWheelSegments';
-
-type Persona = {
-  id: string;
-  name: string;
-  color?: string;
-  avatar_url?: string;
-  description?: string;
-};
 
 export default function PersonaWheel({ personas }: { personas: Persona[] }) {
   const [segments, setSegments] = useState<any[]>([]);
@@ -19,7 +12,14 @@ export default function PersonaWheel({ personas }: { personas: Persona[] }) {
 
   useEffect(() => {
     if (personas.length > 0) {
-      const wheelData = generateWheelSegments(personas);
+      const wheelData = generateWheelSegments(
+  personas.map(p => ({
+    label: p.name,
+    value: p.id,
+    color: p.color ?? "#ccc", // fallback
+  }))
+);
+
       setSegments(wheelData);
     }
   }, [personas]);

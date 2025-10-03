@@ -1,9 +1,9 @@
 // app/api/personas/route.ts
 import { getAuth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { userId } = getAuth(req);
   if (!userId) return NextResponse.json({ personas: [] });
 

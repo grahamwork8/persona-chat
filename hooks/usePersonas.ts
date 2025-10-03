@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Persona } from "@/lib/types";
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -7,7 +8,7 @@ const supabase = createClient(
 );
 
 export default function usePersonas() {
-  const [personas, setPersonas] = useState([]);
+  const [personas, setPersonas] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

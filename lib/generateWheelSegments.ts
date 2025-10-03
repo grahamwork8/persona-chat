@@ -6,7 +6,12 @@ const colors = [
   '#F9F871', '#A66DD4', '#FF9F1C', '#2EC4B6',
 ];
 
-type Segment = { label: string; value: number }; 
+export type Segment = {
+  label: string;
+  value: string; // ✅ now accepts UUIDs
+  color?: string;
+};
+
 export function generateWheelSegments(personas: Segment[], radius = 180) {
   const angleStep = (2 * Math.PI) / personas.length;
 

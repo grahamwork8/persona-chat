@@ -1,19 +1,12 @@
-// app/api/persona/route.ts
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-
 export async function GET(req: NextRequest) {
+  const { userId } = getAuth(req);
   const personaId = req.nextUrl.searchParams.get("personaId");
-  const url = new URL(req.url);
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer
     .from("personas")
     .select("*")
     .eq("id", personaId)

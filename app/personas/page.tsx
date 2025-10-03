@@ -3,7 +3,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { auth } from '@clerk/nextjs/server';
 
 export default async function PersonasPage() {
-  const { userId } = auth();
+  const session = await auth();
+const userId = session.userId;
+
 
   if (!userId) {
     return (
