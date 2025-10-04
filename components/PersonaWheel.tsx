@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { Persona } from "@/lib/types";
 import { useRouter } from 'next/navigation';
 import { generateWheelSegments } from '@/lib/generateWheelSegments';
@@ -13,34 +13,35 @@ export default function PersonaWheel({ personas }: { personas: Persona[] }) {
   useEffect(() => {
     if (personas.length > 0) {
       const wheelData = generateWheelSegments(
-  personas.map(p => ({
-    label: p.name,
-    value: p.id,
-    color: p.color ?? "#ccc", // fallback
-  }))
-);
-
+        personas.map((p) => ({
+          id: p.id,
+          label: p.name,
+          value: p.id,
+          color: p.color ?? "#ccc",
+          description: p.description
+        }))
+      );
       setSegments(wheelData);
     }
   }, [personas]);
 
-  const handleSelect = async (index: number) => {
+  const handleSelect = useCallback(async (index: number) => {
     const selected = segments[index];
     const res = await fetch(`/api/chat/new?personaId=${selected.id}`, {
-  method: 'POST',
-});
-const { sessionId } = await res.json();
-console.log('New session ID:', sessionId);
-
+      method: 'POST',
+      credentials: 'include'
+    });
+    const { sessionId } = await res.json();
+    console.log('New session ID:', sessionId);
     router.push(`/chat/${selected.id}/${sessionId}`);
-  };
+  }, [segments, router]);
 
   return (
     <div className="relative w-full max-w-lg mx-auto">
       <svg viewBox="0 0 400 400" className="w-full h-full">
         {segments.map((segment, i) => (
           <g
-            key={segment.id}
+            key={segment.id ?? i}
             className="group cursor-pointer"
             onClick={() => handleSelect(i)}
             onMouseEnter={() => setHoveredIndex(i)}
@@ -68,7 +69,7 @@ console.log('New session ID:', sessionId);
       {hoveredIndex !== null && (
         <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">
           <div className="bg-white shadow-lg p-4 rounded text-center max-w-xs">
-            <h3 className="text-lg font-semibold">{segments[hoveredIndex].name}</h3>
+            <h3 className="text-lg font-semibold">{segments[hoveredIndex].label}</h3>
             <p className="text-sm text-gray-600">{segments[hoveredIndex].description}</p>
           </div>
         </div>
@@ -76,4 +77,5 @@ console.log('New session ID:', sessionId);
     </div>
   );
 }
+
 
