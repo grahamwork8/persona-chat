@@ -1,18 +1,22 @@
 import { getAuth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { supabaseServer } from "@/lib/supabaseServer";
-import { NextRequest } from 'next/server';
+import { createClient } from "@supabase/supabase-js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-export async function POST(req: NextRequest) {
-	try {
-  console.log("🔧 Starting /api/chat");
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-  const auth = getAuth(req);
-  const userId = auth?.userId;
-  console.log("🔐 Authenticated user:", userId);
+export async function POST(req: NextRequest) {
+  try {
+    console.log("🔧 Starting /api/chat");
+
+    const auth = getAuth(req);
+    const userId = auth?.userId;
+    console.log("🔐 Authenticated user:", userId);
 
     if (!userId) {
       console.warn("⚠️ No userId found, redirecting to sign-in");
@@ -30,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("🧠 Fetching persona prompt...");
-    const { data: personaData, error: personaError } = await supabaseServer
+    const { data: personaData, error: personaError } = await supabase
       .from("personas")
       .select("prompt")
       .eq("id", personaId)
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest) {
     console.log("🧾 System prompt:", systemPrompt);
 
     console.log("📚 Fetching message history...");
-    const { data: messagesData, error: messagesError } = await supabaseServer
+    const { data: messagesData, error: messagesError } = await supabase
       .from("messages")
       .select("role, content")
       .eq("session_id", sessionId)
@@ -64,21 +68,16 @@ export async function POST(req: NextRequest) {
     console.log("🧠 Sending to OpenAI:", chatHistory);
 
     const openaiResponse = await openai.chat.completions.create({
-  model: "gpt-4",
-  messages: chatHistory
-});
+      model: "gpt-4",
+      messages: chatHistory
+    });
 
-const reply = openaiResponse.choices[0]?.message?.content ?? "No response";
+    const reply = openaiResponse.choices[0]?.message?.content ?? "No response";
 
     console.log("🤖 OpenAI reply:", reply);
-console.log("Inserting messages:", [
-  { session_id: sessionId, role: "user", content: message },
-  { session_id: sessionId, role: "ai", content: reply },
-]);
-
 
     console.log("💾 Saving messages to Supabase...");
-    await supabaseServer.from("messages").insert([
+    await supabase.from("messages").insert([
       { session_id: sessionId, role: "user", content: message },
       { session_id: sessionId, role: "assistant", content: reply }
     ]);
@@ -96,8 +95,5 @@ export async function GET() {
     headers: { "Content-Type": "application/json" }
   });
 }
-
-
-
 
 
