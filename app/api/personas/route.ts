@@ -11,7 +11,7 @@ export async function GET() {
 
   if (error) {
     console.error("❌ Supabase error:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch personas" }), {
+    return new Response(JSON.stringify({ error: "Failed to fetch personas." }), {
       status: 500
     });
   }
