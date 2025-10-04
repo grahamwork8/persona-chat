@@ -2,19 +2,22 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
-export async function GET(req: NextRequest) {
-  const { userId } = getAuth(req);
-  if (!userId) return NextResponse.json({ personas: [] });
-
-  const { data, error } = await supabaseServer
+export async function GET() {
+  const { data, error } = await supabase
     .from("personas")
     .select("id, name, description");
 
   if (error) {
-    console.error("❌ Failed to fetch personas:", error);
-    return NextResponse.json({ personas: [] });
+    console.error("❌ Supabase error:", error);
+    return new Response(JSON.stringify({ error: "Failed to fetch personas" }), {
+      status: 500
+    });
   }
 
-  return NextResponse.json({ personas: data });
+  return new Response(JSON.stringify({ personas: data }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
+  });
 }
