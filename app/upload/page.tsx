@@ -32,7 +32,10 @@ export default function UploadPage() {
   return (
     <div className="max-w-xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Upload RAG File</h1>
-      <p className="mb-2 text-gray-600">Signed in as: {user?.emailAddresses}</p>
+      <p className="mb-2 text-gray-600">
+  Signed in as: {user?.primaryEmailAddress?.emailAddress}
+</p>
+
 
       <input
         type="file"
