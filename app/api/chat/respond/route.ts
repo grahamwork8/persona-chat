@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-5-chat-latest",
       messages: [
         { role: "system", content: persona.prompt },
         { role: "user", content: message },
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
 
     const aiReply = response.choices[0]?.message?.content;
     console.log("AI reply:", aiReply);
+
 
     const { error: insertError } = await supabase.from("messages").insert([
   { session_id: sessionId, role: "user", content: message },

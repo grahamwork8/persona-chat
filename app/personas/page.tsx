@@ -29,18 +29,24 @@ const userId = session.userId;
     );
   }
 
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Your Personas</h1>
-      <ul className="space-y-4">
-        {personas?.map((p) => (
-          <li key={p.id} className="border p-4 rounded shadow">
-            <h2 className="text-lg font-semibold">{p.name}</h2>
-            <p className="text-sm text-gray-600">{p.description}</p>
-          </li>
-        ))}
-      </ul>
-    </main>
-  );
+return (
+  <main className="p-6">
+    <h1 className="text-2xl font-bold mb-4">Your Personas</h1>
+    <ul className="space-y-4">
+      {personas?.map((p) => (
+        <li key={p.id} className="border p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">{p.name}</h2>
+          {/* ✅ Light grey model hint */}
+          <p className="text-sm text-red-500">Model: {p.model}</p>
+
+            Model: {p.model || 'gpt-realtime'}
+          </p>
+          <p className="text-sm text-gray-600">{p.description}</p>
+        </li>
+      ))}
+    </ul>
+  </main>
+);
+
 }
 

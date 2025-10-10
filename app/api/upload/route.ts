@@ -1,39 +1,37 @@
-import { getAuth } from "@clerk/nextjs/server";
-import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
+// app/api/upload/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function POST(req: NextRequest) {
-  const { userId } = getAuth(req);
-  if (!userId) return new Response("Unauthorized", { status: 401 });
-
   const formData = await req.formData();
-  const file = formData.get("file") as File;
-  const personaId = formData.get("personaId"); // or from req.url
+  const file = formData.get('file') as File;
+  const userId = formData.get('userId') as string;
 
-const { data, error } = await supabase.storage
-  .from("persona-files")
-  .upload(`user-${userId}/${file.name}`, file, {
-    cacheControl: "3600",
-    upsert: true
-  });
+  if (!file || !userId) {
+    return NextResponse.json({ error: 'Missing file or userId' }, { status: 400 });
+  }
 
-if (error) {
-  console.error("❌ Supabase upload error:", error);
-  return new Response("Upload failed", { status: 500 });
-}
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = new Uint8Array(arrayBuffer);
+  const filename = file.name || 'upload.pdf';
+  const path = `user-${userId}/${filename}`;
 
-// ✅ Link file to persona
-await supabase
-  .from("personas")
-  .update({ file_id: data.path })
-  .eq("id", personaId);
+  const { error } = await supabase.storage
+    .from('persona-files')
+    .upload(path, buffer, {
+      contentType: file.type || 'application/pdf',
+      upsert: true,
+    });
 
-return new Response(JSON.stringify({ path: data.path }), {
-  headers: { "Content-Type": "application/json" }
-});
+  if (error) {
+    console.error('Upload failed:', error);
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, path });
 }

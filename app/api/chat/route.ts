@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     console.log("🧠 Sending to OpenAI:", chatHistory);
 
     const openaiResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-5-chat-latest",
       messages: chatHistory
     });
 

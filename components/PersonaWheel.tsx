@@ -56,10 +56,10 @@ export default function PersonaWheel({ personas }: { personas: Persona[] }) {
             />
             <image
               href="/icon.svg"
-              x={segment.iconX - 12}
-              y={segment.iconY - 12}
-              width={24}
-              height={24}
+              x={segment.iconX - 18}
+              y={segment.iconY - 24}
+              width={34}
+              height={34}
               className="pointer-events-none"
             />
           </g>

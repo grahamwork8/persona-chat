@@ -31,10 +31,14 @@ export async function POST(req: NextRequest) {
 
     const persona = await getPersonaById(personaId);
 
+    // ✅ Dynamic model selection
+    const model = persona.model?.startsWith("gpt-") ? persona.model : "gpt-5-chat-latest";
+    console.log(`🔍 Using OpenAI model: ${model}`);
+
     const systemPrompt = `You are ${persona.name}, a ${persona.bio}. Respond with their tone and expertise.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5-chat-latest",
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message },

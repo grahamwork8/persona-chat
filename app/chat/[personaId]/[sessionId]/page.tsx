@@ -111,17 +111,21 @@ export default function ChatPage() {
       <div className="w-full max-w-2xl space-y-6">
         {/* Header */}
         <div className="bg-white border rounded p-4 shadow flex justify-between items-center">
-          <div>
-            <h1 className="text-lg font-semibold">{persona.name}</h1>
-            <p className="text-sm text-gray-500 italic">{persona.description}</p>
-          </div>
-          <button
-            onClick={startNewChat}
-            className="px-15 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-900"
-          >
-             New Chat
-          </button>
-        </div>
+  <div>
+    <h1 className="text-lg font-semibold">{persona.name}</h1>
+    <p className="text-sm text-gray-500 italic">{persona.description}</p>
+    <p className="text-xs text-gray-400 italic">
+      Model: {persona.model || 'gpt-5-chat-latest'}
+    </p>
+  </div>
+  <button
+    onClick={startNewChat}
+    className="px-15 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-900"
+  >
+    New Chat
+  </button>
+</div>
+
 
         
 
