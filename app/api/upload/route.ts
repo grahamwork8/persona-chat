@@ -21,17 +21,39 @@ export async function POST(req: NextRequest) {
   const filename = file.name || 'upload.pdf';
   const path = `user-${userId}/${filename}`;
 
-  const { error } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from('persona-files')
     .upload(path, buffer, {
       contentType: file.type || 'application/pdf',
       upsert: true,
     });
 
-  if (error) {
-    console.error('Upload failed:', error);
+  if (uploadError) {
+    console.error('Upload failed:', uploadError);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, path });
+  // ✅ Create new persona record
+  const { data: persona, error: insertError } = await supabase
+    .from('personas')
+    .insert([
+  {
+    owner_id: userId,
+    name: filename.replace(/\.[^/.]+$/, ''),
+    description: 'Uploaded RAG file',
+    model: 'gpt-5-pro-2025-10-06',
+    file_id: path,
+    prompt: `You are ${filename.replace(/\.[^/.]+$/, '')}, a helpful assistant powered by RAG.`,
+  },
+])
+
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error('Persona creation failed:', insertError);
+    return NextResponse.json({ error: 'Persona creation failed' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, path, personaId: persona.id });
 }

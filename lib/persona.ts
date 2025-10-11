@@ -6,13 +6,18 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export async function getPersonaById(personaId: string) {
+export async function getPersonaById(id: string) {
   const { data, error } = await supabase
-    .from("personas")
-    .select("*")
-    .eq("id", personaId)
+    .from('personas')
+    .select('*') 
+    .eq('id', id)
     .single();
 
-  if (error || !data) throw new Error("Persona not found");
+  if (error || !data) {
+    console.error("Failed to load persona:", error);
+    throw new Error("Persona not found");
+  }
+
   return data;
 }
+

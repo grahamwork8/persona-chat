@@ -3,7 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { Inter } from 'next/font/google';
 import type { Metadata } from 'next';
 import Header from '../app/Header';
-import SupabaseProvider from './SupabaseProvider'; // 👈 client wrapper
+import SupabaseProvider from './SupabaseProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <body className={inter.className}>
           <main className="min-h-screen bg-gray-50 text-gray-900">
             <Header />
-            <SupabaseProvider> {/* ✅ now inside <main>, safe for hydration */}
+            <SupabaseProvider>
               {children}
             </SupabaseProvider>
           </main>

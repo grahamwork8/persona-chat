@@ -19,10 +19,11 @@ export default function FileUploader({ userId }: { userId: string }) {
 
     const result = await res.json();
     if (res.ok) {
-      setStatus(`✅ Uploaded to: ${result.path}`);
-    } else {
-      setStatus(`❌ Upload failed: ${result.error}`);
-    }
+  setStatus(`✅ Persona created: ${result.personaId}`);
+} else {
+  setStatus(`❌ Upload failed: ${result.error}`);
+}
+
   };
 
   return (
