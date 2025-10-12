@@ -7,6 +7,8 @@ import ChatInput from '@/components/ChatInput';
 import PersonaSelector from '@/components/PersonaSelector';
 import dayjs from 'dayjs';
 import MessageList from '@/components/MessageList';
+import ReactMarkdown from 'react-markdown';
+
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

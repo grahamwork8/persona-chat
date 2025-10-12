@@ -1,10 +1,11 @@
 // app/personas/page.tsx
-import { supabase } from '@/lib/supabaseClient';
+import { getSupabaseClient } from '@/lib/supabaseClient';
 import { auth } from '@clerk/nextjs/server';
 
 export default async function PersonasPage() {
   const session = await auth();
 const userId = session.userId;
+const supabase = getSupabaseClient();
 
 
   if (!userId) {
