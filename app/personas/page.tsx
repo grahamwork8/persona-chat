@@ -38,9 +38,6 @@ return (
           <h2 className="text-lg font-semibold">{p.name}</h2>
           {/* ✅ Light grey model hint */}
           <p className="text-sm text-red-500">Model: {p.model}</p>
-
-            Model: {p.model || 'gpt-realtime'}
-          </p>
           <p className="text-sm text-gray-600">{p.description}</p>
         </li>
       ))}
