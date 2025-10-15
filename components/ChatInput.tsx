@@ -51,7 +51,10 @@ const sendMessage = async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ message, personaId, sessionId }),
+      body: JSON.stringify({message, personaId, sessionId,
+      history: [...messages, { role: "user", content: message }],
+}),
+
     });
 
     if (!res.ok) {
