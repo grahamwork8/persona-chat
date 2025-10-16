@@ -1,3 +1,4 @@
+//respond/route.ts
 import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
@@ -28,6 +29,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: "", error: "Persona not found" }, { status: 404 });
     }
 
+    // ✅ Check if system message already exists in Supabase
+    const { data: existingSystemMessages, error: systemCheckError } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("session_id", sessionId)
+      .eq("role", "system")
+      .limit(1);
+
+    if (systemCheckError) {
+      console.error("System message check error:", systemCheckError);
+      return NextResponse.json({ reply: "", error: "Failed to check system message" }, { status: 500 });
+    }
+
+    // ✅ Insert system message if not already present
+    if (!existingSystemMessages || existingSystemMessages.length === 0) {
+      const { error: systemInsertError } = await supabase.from("messages").insert([
+        {
+          session_id: sessionId,
+          role: "system",
+          content: persona.prompt,
+        },
+      ]);
+
+      if (systemInsertError) {
+        console.error("System message insert error:", systemInsertError);
+      }
+    }
+
     // ✅ Use frontend-passed history if available, else fetch from Supabase
     let sessionMessages = history;
 
@@ -46,12 +75,21 @@ export async function POST(req: Request) {
       sessionMessages = dbHistory || [];
     }
 
-    // ✅ Build full message array with persona prompt
-    const messages = [
-      { role: "system", content: persona.prompt },
-      ...sessionMessages,
-      { role: "user", content: message },
-    ];
+// ✅ Build final message array for OpenAI
+const hasSystemPrompt = history.some(
+  (msg: { role: string; content: string }) =>
+    msg.role === "system" && msg.content?.trim() === persona.prompt?.trim()
+);
+
+const messages = [
+  ...(hasSystemPrompt ? [] : [{ role: "system", content: persona.prompt }]),
+  ...history,
+  { role: "user", content: message },
+];
+
+
+
+console.log("Final messages sent to OpenAI:", JSON.stringify(messages, null, 2));
 
     // ✅ Send to OpenAI
     const response = await openai.chat.completions.create({
@@ -59,14 +97,26 @@ export async function POST(req: Request) {
       messages,
     });
 
-    const aiReply = response.choices[0]?.message?.content;
+    const aiReply = response.choices[0]?.message?.content?.trim();
     console.log("AI reply:", aiReply);
 
-    // ✅ Store both user and assistant messages
-    const { error: insertError } = await supabase.from("messages").insert([
+    // ✅ Detect and suppress echo replies
+    const isEcho = aiReply === persona.prompt?.trim();
+
+    // ✅ Store user message, and assistant reply only if not echo
+    const messagesToInsert = [
       { session_id: sessionId, role: "user", content: message },
-      { session_id: sessionId, role: "assistant", content: aiReply },
-    ]);
+    ];
+
+    if (!isEcho) {
+      messagesToInsert.push({
+        session_id: sessionId,
+        role: "assistant",
+        content: aiReply,
+      });
+    }
+
+    const { error: insertError } = await supabase.from("messages").insert(messagesToInsert);
 
     if (insertError) {
       console.error("Insert error:", insertError);

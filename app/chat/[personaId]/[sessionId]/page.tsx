@@ -5,10 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import ChatInput from '@/components/ChatInput';
 import PersonaSelector from '@/components/PersonaSelector';
-import dayjs from 'dayjs';
 import MessageList from '@/components/MessageList';
-import ReactMarkdown from 'react-markdown';
-
+import SessionManager from '@/components/SessionManager';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -91,6 +89,10 @@ export default function ChatPage() {
     router.push(`/chat/${personaId}/${newSessionId}`);
   };
 
+  const handleSessionSwitch = (newSessionId: string) => {
+    router.push(`/chat/${personaId}/${newSessionId}`);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -111,25 +113,31 @@ export default function ChatPage() {
   return (
     <main className="min-h-screen bg-gray-100 flex flex-col items-center px-4 py-6">
       <div className="w-full max-w-2xl space-y-6">
-        {/* Header */}
+
+        {/* 🔥 Session Header */}
+        <SessionManager
+          sessionId={sessionId as string}
+          personaId={personaId as string}
+          setSessionId={handleSessionSwitch}
+        />
+
+        {/* Persona Header */}
         <div className="bg-white border rounded p-4 shadow flex justify-between items-center">
-  <div>
-    <h1 className="text-lg font-semibold">{persona.name}</h1>
-    <p className="text-sm text-gray-500 italic">{persona.description}</p>
-    <p className="text-xs text-gray-400 italic">
-      Model: {persona.model || 'gpt-5-chat-latest'}
-    </p>
-  </div>
-  <button
-    onClick={startNewChat}
-    className="px-15 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-900"
-  >
-    New Chat
-  </button>
-</div>
+          <div>
+            <h1 className="text-lg font-semibold">{persona.name}</h1>
+            <p className="text-sm text-gray-500 italic">{persona.description}</p>
+            <p className="text-xs text-gray-400 italic">
+              Model: {persona.model || 'gpt-5-chat-latest'}
+            </p>
+          </div>
+          <button
+            onClick={startNewChat}
+            className="px-15 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-900"
+          >
+            New Chat
+          </button>
+        </div>
 
-
-        
 
         {/* Chat Input */}
         <ChatInput personaId={personaId as string} sessionId={sessionId as string} />
@@ -137,3 +145,4 @@ export default function ChatPage() {
     </main>
   );
 }
+

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import MessageList from "./MessageList";
+import SessionManager from './SessionManager';
+
 
 export default function ChatInput({
   personaId,
@@ -11,11 +13,12 @@ export default function ChatInput({
 const [message, setMessage] = useState("");
   const [reply, setReply] = useState("");
   const [persona, setPersona] = useState<{ name: string; description: string } | null>(null);
-  type Message = {
-  role: 'user' | 'assistant';
+type Message = {
+  role: 'user' | 'assistant' | 'system';
   content: string;
   created_at?: string;
 };
+
 
 const [messages, setMessages] = useState<Message[]>([]);
 
@@ -52,7 +55,7 @@ const sendMessage = async () => {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({message, personaId, sessionId,
-      history: [...messages, { role: "user", content: message }],
+      history: messages,
 }),
 
     });
@@ -96,6 +99,7 @@ fetchMessages();
         <div className="p-3 bg-gray-50 border rounded">
           <div className="flex justify-between items-center">
             <div>
+<SessionManager sessionId={sessionId} setSessionId={(id) => window.location.href = `/?sessionId=${id}`} />
               <p className="text-sm text-gray-600">
                 Chatting with <strong>{persona.name}</strong>
               </p>
