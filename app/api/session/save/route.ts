@@ -1,5 +1,6 @@
 //api/session/save/route.ts
-  import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   const { sessionId, name } = await req.json();
