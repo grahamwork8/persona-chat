@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 
 export default function SessionManager({
   sessionId,
+  personaId,
   setSessionId,
 }: {
-  sessionId: string | undefined;
+  sessionId: string;
+  personaId: string;
   setSessionId: (id: string) => void;
 }) {
   const [sessions, setSessions] = useState([]);
