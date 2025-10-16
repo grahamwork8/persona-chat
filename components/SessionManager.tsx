@@ -11,7 +11,15 @@ export default function SessionManager({
   personaId: string;
   setSessionId: (id: string) => void;
 }) {
-  const [sessions, setSessions] = useState([]);
+  type Session = {
+  id: string;
+  name: string | null;
+  persona_id: string;
+  created_at: string;
+};
+
+const [sessions, setSessions] = useState<Session[]>([]);
+
   const [newName, setNewName] = useState('');
 
 useEffect(() => {
