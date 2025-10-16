@@ -99,11 +99,6 @@ fetchMessages();
         <div className="p-3 bg-gray-50 border rounded">
           <div className="flex justify-between items-center">
             <div>
-<SessionManager
-  sessionId={sessionId as string}
-  setSessionId={(id) => (window.location.href = `/?sessionId=${id}`)}
-/>
-
               <p className="text-sm text-gray-600">
                 Chatting with <strong>{persona.name}</strong>
               </p>
