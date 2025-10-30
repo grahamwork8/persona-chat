@@ -38,20 +38,6 @@ export default function PersonaSelector({
     return <p className="text-gray-500">Loading personas...</p>;
   }
 
-  return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Choose your persona!!</h2>
-      {personas.map((persona) => (
-        <div
-          key={persona.id}
-          className="p-3 border rounded hover:bg-gray-50 cursor-pointer"
-          onClick={() => handleSelect(persona.id)}
-        >
-          <p className="font-medium">{persona.name}</p>
-          <p className="text-sm text-gray-500 italic">{persona.description}</p>
-        </div>
-      ))}
-    </div>
-  );
+  
 }
 

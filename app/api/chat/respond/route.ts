@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     // ✅ Fetch persona prompt
     const { data: persona, error: personaError } = await supabase
       .from("personas")
-      .select("prompt")
+      .select("prompt, name")
       .eq("id", personaId)
       .single();
 
@@ -29,33 +29,48 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: "", error: "Persona not found" }, { status: 404 });
     }
 
-    // ✅ Check if system message already exists in Supabase
-    const { data: existingSystemMessages, error: systemCheckError } = await supabase
-      .from("messages")
-      .select("id")
-      .eq("session_id", sessionId)
-      .eq("role", "system")
-      .limit(1);
+    // ✅ Embed user message
+    const embeddedQuery = await openai.embeddings.create({
+      model: "text-embedding-3-large",
+      input: message,
+    });
 
-    if (systemCheckError) {
-      console.error("System message check error:", systemCheckError);
-      return NextResponse.json({ reply: "", error: "Failed to check system message" }, { status: 500 });
+    const queryEmbedding = embeddedQuery.data[0].embedding;
+
+    // ✅ Retrieve relevant chunks from Supabase
+    const { data: matches, error: matchError } = await supabase.rpc("match_documents", {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.8,
+      match_count: 5,
+      target_persona_id: personaId,
+    });
+
+    if (matchError) {
+      console.error("RAG match error:", matchError);
     }
 
-    // ✅ Insert system message if not already present
-    if (!existingSystemMessages || existingSystemMessages.length === 0) {
-      const { error: systemInsertError } = await supabase.from("messages").insert([
-        {
-          session_id: sessionId,
-          role: "system",
-          content: persona.prompt,
-        },
-      ]);
+    const context = matches?.map((m: { content: string }) => m.content).join("\n\n") || "";
+    console.log("🔍 Retrieved context:", context);
+	const partial = [
+  0.0009262376697733998, -0.03403880447149277, 0.00846845842897892,
+  0.00021115297568030655, -0.006626293994486332, -0.0047910031862556934,
+  -0.005478377919644117, -0.01613956317305565, -0.0167994424700737,
+  0.0396752804517746, -0.051938049495220184, 0.007561123929917812,
+  -0.010716174729168415, 0.044404421001672745, -0.02291707880795002,
+  -0.01038623508065939, -0.024291830137372017, -0.02011258900165558,
+  0.007021534722298384, -0.013307577930390835
+];
 
-      if (systemInsertError) {
-        console.error("System message insert error:", systemInsertError);
-      }
-    }
+const padded = [...partial, ...Array(3072 - partial.length).fill(0)];
+console.log(`[${padded.join(',')}]`);
+
+
+
+    // ✅ Build unified system prompt
+    const systemPrompt = `${persona.prompt?.trim() || `You are ${persona.name}, a helpful assistant powered by RAG.`}
+
+Context:
+${context}`;
 
     // ✅ Use frontend-passed history if available, else fetch from Supabase
     let sessionMessages = history;
@@ -75,23 +90,16 @@ export async function POST(req: Request) {
       sessionMessages = dbHistory || [];
     }
 
-// ✅ Build final message array for OpenAI
-const hasSystemPrompt = history.some(
-  (msg: { role: string; content: string }) =>
-    msg.role === "system" && msg.content?.trim() === persona.prompt?.trim()
-);
+    // ✅ Always inject system prompt fresh
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...sessionMessages,
+      { role: "user", content: message },
+    ];
 
-const messages = [
-  ...(hasSystemPrompt ? [] : [{ role: "system", content: persona.prompt }]),
-  ...history,
-  { role: "user", content: message },
-];
+    console.log("🧠 Final system prompt:", systemPrompt);
+    console.log("📨 Final messages sent to OpenAI:", JSON.stringify(messages, null, 2));
 
-
-
-console.log("Final messages sent to OpenAI:", JSON.stringify(messages, null, 2));
-
-    // ✅ Send to OpenAI
     const response = await openai.chat.completions.create({
       model: "gpt-5-chat-latest",
       messages,
@@ -100,10 +108,8 @@ console.log("Final messages sent to OpenAI:", JSON.stringify(messages, null, 2))
     const aiReply = response.choices[0]?.message?.content?.trim();
     console.log("AI reply:", aiReply);
 
-    // ✅ Detect and suppress echo replies
     const isEcho = aiReply === persona.prompt?.trim();
 
-    // ✅ Store user message, and assistant reply only if not echo
     const messagesToInsert = [
       { session_id: sessionId, role: "user", content: message },
     ];
@@ -128,4 +134,3 @@ console.log("Final messages sent to OpenAI:", JSON.stringify(messages, null, 2))
     return NextResponse.json({ reply: "", error: "Internal Server Error" }, { status: 500 });
   }
 }
-

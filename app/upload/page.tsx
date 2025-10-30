@@ -1,10 +1,10 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import FileUploader from '@/components/FileUploader';
 import { useState } from 'react';
 
-export default function UploadPage({ personaId }: { personaId: string }) {
+export default function UploadPage() {
+  const { user } = useUser();
   const [file, setFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -12,28 +12,31 @@ export default function UploadPage({ personaId }: { personaId: string }) {
   const [success, setSuccess] = useState(false);
 
   const handleUpload = async () => {
-    if (!file) return setError('Please select a file.');
+    if (!file || !user?.id) return setError('Missing file or user ID.');
     setUploading(true);
     setError('');
     setSuccess(false);
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('personaId', personaId);
-    formData.append('prompt', prompt);
+    formData.append('userId', user.id); // ✅ uploader identity
+    formData.append('prompt', prompt);  // ✅ persona prompt
+
+    for (const [key, value] of formData.entries()) {
+      console.log(`🧾 ${key}:`, value);
+    }
 
     const res = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
     });
 
+    const result = await res.json();
     if (!res.ok) {
-      const { error } = await res.json();
-      setError(error || 'Upload failed.');
+      setError(result.error || 'Upload failed.');
     } else {
       setSuccess(true);
-      setFile(null);
-      setPrompt('');
+      console.log('✅ Persona created with ID:', result.Id);
     }
 
     setUploading(false);
@@ -70,4 +73,3 @@ export default function UploadPage({ personaId }: { personaId: string }) {
     </main>
   );
 }
-

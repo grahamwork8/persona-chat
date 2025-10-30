@@ -13,8 +13,13 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+type ChatParams = {
+  personaId: string;
+  sessionId: string;
+};
+
 export default function ChatPage() {
-  const { personaId, sessionId } = useParams();
+  const { personaId, sessionId } = useParams() as ChatParams
   const router = useRouter();
 
   const [persona, setPersona] = useState<any>(null);

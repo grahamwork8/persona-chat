@@ -1,7 +1,14 @@
-import { useState, useEffect } from "react";
-import MessageList from "./MessageList";
+'use client';
+
+import { useState, useEffect } from 'react';
+import MessageList from './MessageList';
 import SessionManager from './SessionManager';
 
+type Message = {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at?: string;
+};
 
 export default function ChatInput({
   personaId,
@@ -10,88 +17,95 @@ export default function ChatInput({
   personaId: string;
   sessionId?: string;
 }) {
-const [message, setMessage] = useState("");
-  const [reply, setReply] = useState("");
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
   const [persona, setPersona] = useState<{ name: string; description: string } | null>(null);
-type Message = {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  created_at?: string;
-};
-
-
-const [messages, setMessages] = useState<Message[]>([]);
-
   const [isLoading, setIsLoading] = useState(false);
+  const [hasUserMessage, setHasUserMessage] = useState(false);
 
   useEffect(() => {
-    fetchMessages();
-    fetchPersona();
+    if (personaId && sessionId) {
+      fetchPersona();
+      fetchMessages();
+    }
   }, [personaId, sessionId]);
 
+useEffect(() => {
+  const handleUnload = () => {
+    if (!hasUserMessage && sessionId) {
+      const payload = JSON.stringify({ sessionId });
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon('/api/session/cleanup', blob);
+    }
+  };
+
+  window.addEventListener('beforeunload', handleUnload);
+  return () => window.removeEventListener('beforeunload', handleUnload);
+}, [hasUserMessage, sessionId]);
+
   const fetchPersona = async () => {
-    const res = await fetch(`/api/persona?personaId=${personaId}`, {
-      credentials: "include",
-    });
-    const data = await res.json();
-    setPersona(data.persona);
+    try {
+      const res = await fetch(`/api/persona?personaId=${personaId}`, { credentials: 'include' });
+      const data = await res.json();
+      setPersona(data.persona);
+    } catch (err) {
+      console.error('Failed to fetch persona:', err);
+    }
   };
 
   const fetchMessages = async () => {
-    const res = await fetch(`/api/messages?sessionId=${sessionId}`, {
-      credentials: "include",
-    });
-    const data = await res.json();
-    setMessages(data.messages);
-  };
-const sendMessage = async () => {
-  if (!message.trim()) return;
-
-  setIsLoading(true);
-
-  try {
-    const res = await fetch("/api/chat/respond", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({message, personaId, sessionId,
-      history: messages,
-}),
-
-    });
-
-    if (!res.ok) {
-      console.error("Server error:", res.status);
-      setIsLoading(false);
-      return;
-    }
-
-    let data;
     try {
-      data = await res.json();
+      const res = await fetch(`/api/messages?sessionId=${sessionId}`, { credentials: 'include' });
+      const data = await res.json();
+      setMessages(data.messages || []);
     } catch (err) {
-      console.error("Failed to parse JSON:", err);
-      setIsLoading(false);
-      return;
+      console.error('Failed to fetch messages:', err);
     }
+  };
 
-console.log("Response from backend:", data);
+  const sendMessage = async () => {
+    if (!message.trim()) return;
 
-if (!data || typeof data.reply !== "string") {
-  console.error("Invalid response format:", data);
-  return;
-}
+    setIsLoading(true);
+    setHasUserMessage(true);
 
-setReply(data.reply);
-setMessage("");
-fetchMessages();
-  } catch (err) {
-    console.error("sendMessage error:", err);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    try {
+      const res = await fetch('/api/chat/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          message,
+          personaId,
+          sessionId,
+          history: messages,
+        }),
+      });
 
+      if (!res.ok) {
+        console.error('Server error:', res.status);
+        return;
+      }
+
+      const data = await res.json();
+      if (!data || typeof data.reply !== 'string') {
+        console.error('Invalid response format:', data);
+        return;
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', content: message },
+        { role: 'assistant', content: data.reply },
+      ]);
+
+      setMessage('');
+    } catch (err) {
+      console.error('sendMessage error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -123,7 +137,7 @@ fetchMessages();
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
           }

@@ -25,7 +25,7 @@ const [sessions, setSessions] = useState<Session[]>([]);
 useEffect(() => {
   const loadSessions = async () => {
     try {
-      const res = await fetch('/api/session/list');
+      const res = await fetch(`/api/session/list?personaId=${personaId}`);
       if (!res.ok) throw new Error('Failed to fetch sessions');
       const data = await res.json();
       setSessions(data.sessions || []);
@@ -36,22 +36,28 @@ useEffect(() => {
   };
 
   loadSessions();
-}, []);
+}, [personaId]);
 
 
 
-  const renameSession = async () => {
-    if (!sessionId || !newName.trim()) return;
-    await fetch('/api/session/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, name: newName }),
-    });
-    setNewName('');
-    const res = await fetch('/api/session/list');
-    const data = await res.json();
-    setSessions(data.sessions);
-  };
+
+const renameSession = async () => {
+  if (!sessionId || !newName.trim()) return;
+
+  await fetch('/api/session/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, name: newName }),
+  });
+
+  setNewName('');
+
+  // 🔧 FIX: include personaId in the refresh
+  const res = await fetch(`/api/session/list?personaId=${personaId}`);
+  const data = await res.json();
+  setSessions(data.sessions || []);
+};
+
 
   return (
     <div className="flex items-center gap-4 mb-4">

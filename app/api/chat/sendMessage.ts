@@ -1,3 +1,4 @@
+//chat/sendMessage.ts
 import { OpenAI } from "openai";
 import { NextRequest, NextResponse } from "next/server";
 import { getPersonaById } from "@/lib/persona";

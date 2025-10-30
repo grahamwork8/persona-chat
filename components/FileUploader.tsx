@@ -11,6 +11,11 @@ export default function FileUploader({ userId }: { userId: string }) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('userId', userId);
+    formData.append('prompt', 'Default persona prompt');
+
+    for (const [key, value] of formData.entries()) {
+      console.log(`🧾 ${key}:`, value);
+    }
 
     const res = await fetch('/api/upload', {
       method: 'POST',
@@ -19,11 +24,10 @@ export default function FileUploader({ userId }: { userId: string }) {
 
     const result = await res.json();
     if (res.ok) {
-  setStatus(`✅ Persona created: ${result.personaId}`);
-} else {
-  setStatus(`❌ Upload failed: ${result.error}`);
-}
-
+      setStatus(`✅ Persona created: ${result.Id}`);
+    } else {
+      setStatus(`❌ Upload failed: ${result.error}`);
+    }
   };
 
   return (
