@@ -22,9 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-const pdfParse = require('pdf-parse');  
 const form = formidable({ keepExtensions: true, multiples: true, encoding: 'utf-8' });
-
   form.parse(req, async (err, fields, files) => {
     if (err) {
       console.error('Form parse error:', err);
@@ -46,33 +44,58 @@ const form = formidable({ keepExtensions: true, multiples: true, encoding: 'utf-
       const safeName = rawName.replace(/[^a-zA-Z0-9.\-]/g, '_');
       const path = `user-${userId}/${safeName}`;
       const fileBuffer = fs.readFileSync(file.filepath);
+      const pdfParse = require('pdf-parse');
+console.log('typeof pdfParse:', typeof pdfParse);
+console.log('pdfParse keys:', Object.keys(pdfParse));
 
-      const { error: uploadError } = await supabase.storage
-        .from('persona-files')
-        .upload(path, fileBuffer, {
-          contentType: file.mimetype || 'application/pdf',
-          upsert: true,
-        });
 
-      if (uploadError) {
-        console.error('Upload failed:', uploadError);
-        return res.status(500).json({ error: 'Upload failed' });
-      }
 
-      const { data: persona, error: insertError } = await supabase
-        .from('personas')
-        .insert([
-          {
-            owner_id: userId,
-            name: safeName.replace(/\.[^/.]+$/, ''),
-            description: 'Uploaded RAG file',
-            model: 'gpt-5-pro-2025-10-06',
-            file_id: path,
-            prompt: prompt || `You are ${safeName.replace(/\.[^/.]+$/, '')}, a helpful assistant powered by RAG.`,
-          },
-        ])
-        .select()
-        .single();
+
+
+const { error: uploadError } = await supabase.storage
+  .from('persona-files')
+  .upload(path, fileBuffer, {
+    contentType: file.mimetype || 'application/pdf',
+    upsert: true,
+  });
+
+if (uploadError) {
+  console.error('Upload failed:', uploadError);
+  return res.status(500).json({ error: 'Upload failed' });
+}
+
+const { data: inserted, error: insertError } = await supabase
+  .from('personas')
+  .insert([
+    {
+      owner_id: userId,
+      name: safeName.replace(/\.[^/.]+$/, ''),
+      description: 'Uploaded RAG file',
+      model: 'gpt-5-pro-2025-10-06',
+      file_id: path,
+      prompt: prompt || `You are ${safeName.replace(/\.[^/.]+$/, '')}, a helpful assistant powered by RAG.`,
+    },
+  ])
+  .select();
+
+const persona = inserted?.[0];
+
+if (insertError || !persona) {
+  console.error('Persona creation failed:', insertError);
+  return res.status(500).json({ error: 'Persona creation failed' });
+}
+
+console.log('Inserted persona:', persona);
+
+// ✅ Now you can safely ping using persona.id
+const { data: ping, error: pingError } = await supabase
+  .from('personas')
+  .select()
+  .eq('id', persona.id);
+
+console.log('Supabase ping:', ping, pingError);
+
+
 
       if (insertError || !persona) {
         console.error('Persona creation failed:', insertError);
@@ -90,6 +113,8 @@ const form = formidable({ keepExtensions: true, multiples: true, encoding: 'utf-
 
       // ✅ Parse PDF using pdf-lib
      const buffer = Buffer.from(await fileData.arrayBuffer());
+console.log('typeof pdfParse:', typeof pdfParse); // should be 'function'
+
 const parsed = await pdfParse(buffer);
 const fullText = parsed.text;
 

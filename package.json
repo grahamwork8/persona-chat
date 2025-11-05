@@ -20,7 +20,7 @@
     "next": "^15.5.1-canary.36",
     "openai": "^5.23.2",
     "pdf-lib": "^1.17.1",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "pdf-text-extract": "^1.5.0",
     "pdfjs": "^2.5.4",
     "pdfjs-dist": "^5.4.296",

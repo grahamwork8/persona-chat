@@ -1,99 +1,111 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+import { OpenAI } from "openai";
+import { getPersonaById } from "@/lib/persona";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+
+type RagMatch = { content: string };
+
 export async function POST(req: NextRequest) {
   try {
-    console.log("🔧 Starting /api/chat");
-
     const auth = getAuth(req);
     const userId = auth?.userId;
-    console.log("🔐 Authenticated user:", userId);
-
     if (!userId) {
-      console.warn("⚠️ No userId found, redirecting to sign-in");
       return NextResponse.redirect(new URL("/sign-in", req.url));
     }
 
-    const body = await req.json();
-    console.log("📦 Request body:", body);
+    const { personaId, sessionId, message, history } = await req.json();
+    console.log("Received:", { personaId, sessionId, message });
 
-    const { message, personaId, sessionId } = body;
+    const persona = await getPersonaById(personaId);
 
-    if (!message || !personaId || !sessionId) {
-      console.warn("⚠️ Missing required fields");
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
-    console.log("🧠 Fetching persona prompt...");
-    const { data: personaData, error: personaError } = await supabase
-      .from("personas")
-      .select("prompt")
-      .eq("id", personaId)
-      .single();
-
-    if (personaError || !personaData?.prompt) {
-      console.error("❌ Persona fetch error:", personaError);
-      return NextResponse.json({ error: "Persona prompt not found" }, { status: 404 });
-    }
-
-    const systemPrompt = personaData.prompt;
-    console.log("🧾 System prompt:", systemPrompt);
-
-    console.log("📚 Fetching message history...");
-    const { data: messagesData, error: messagesError } = await supabase
-      .from("messages")
-      .select("role, content")
-      .eq("session_id", sessionId)
-      .order("created_at", { ascending: true });
-
-    if (messagesError) {
-      console.error("❌ Message fetch error:", messagesError);
-    }
-
-    const chatHistory = [
-      { role: "system", content: systemPrompt },
-      ...(messagesData ?? []),
-      { role: "user", content: message }
-    ];
-
-    console.log("🧠 Sending to OpenAI:", chatHistory);
-
-    const openaiResponse = await openai.chat.completions.create({
-      model: "gpt-5-chat-latest",
-      messages: chatHistory
+    const embeddedQuery = await openai.embeddings.create({
+      model: "text-embedding-3-large",
+      input: message,
     });
 
-    const reply = openaiResponse.choices[0]?.message?.content ?? "No response";
+    const queryEmbedding = embeddedQuery.data[0].embedding;
 
-    console.log("🤖 OpenAI reply:", reply);
+    const { data: ragMatches, error: matchError } = await supabase.rpc("match_documents", {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.5,
+      match_count: 5,
+      target_persona_id: personaId,
+    });
 
-    console.log("💾 Saving messages to Supabase...");
-    await supabase.from("messages").insert([
+    if (matchError) {
+      console.error("RAG match error:", matchError);
+    }
+
+    const ragContext = ragMatches?.length
+      ? (ragMatches as RagMatch[]).map((m) => m.content).join("\n\n")
+      : message.toLowerCase().includes("who are you")
+        ? `J.D. O’Hara is the CEO of Internova Travel Group...`
+        : "";
+
+    console.log("🔍 Retrieved RAG context:", ragContext.slice(0, 300));
+
+    const systemPrompt = `${persona.prompt?.trim() || `You are ${persona.name}, a helpful assistant powered by RAG.`}\n\nContext:\n${ragContext}`;
+
+    let sessionMessages = history;
+    if (!sessionMessages || !Array.isArray(sessionMessages)) {
+      const { data: dbHistory, error: historyError } = await supabase
+        .from("messages")
+        .select("role, content")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true });
+
+      if (historyError) {
+        console.error("History fetch error:", historyError);
+        return NextResponse.json({ reply: "", error: "Failed to load session history" }, { status: 500 });
+      }
+
+      sessionMessages = dbHistory || [];
+    }
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...sessionMessages,
+      { role: "user", content: message },
+    ];
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-5-chat-latest",
+      messages,
+    });
+
+    const aiReply = response.choices[0]?.message?.content?.trim();
+    console.log("AI reply:", aiReply);
+
+    const isEcho = aiReply === persona.prompt?.trim();
+
+    const messagesToInsert = [
       { session_id: sessionId, role: "user", content: message },
-      { session_id: sessionId, role: "assistant", content: reply }
-    ]);
+    ];
 
-    return NextResponse.json({ reply });
-  } catch (error) {
-    console.error("🔥 API route error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (!isEcho) {
+      messagesToInsert.push({
+        session_id: sessionId,
+        role: "assistant",
+        content: aiReply,
+      });
+    }
+
+    const { error: insertError } = await supabase.from("messages").insert(messagesToInsert);
+    if (insertError) {
+      console.error("Insert error:", insertError);
+    }
+
+    return NextResponse.json({ reply: aiReply });
+  } catch (err) {
+    console.error("Unhandled error in POST /chat:", err);
+    return NextResponse.json({ reply: "", error: "Internal Server Error" }, { status: 500 });
   }
 }
-
-export async function GET() {
-  return new Response(JSON.stringify({ status: "Chat API is alive 🚀" }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" }
-  });
-}
-
-

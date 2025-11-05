@@ -70,7 +70,7 @@ useEffect(() => {
     setHasUserMessage(true);
 
     try {
-      const res = await fetch('/api/chat/respond', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
